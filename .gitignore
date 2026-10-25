@@ -1,0 +1,46 @@
+# Dependencies and generated outputs
+node_modules/
+.expo/
+dist/
+web-build/
+coverage/
+/android/
+/ios/
+expo-env.d.ts
+*.tsbuildinfo
+.kotlin/
+.metro-health-check*
+
+# Local environments, signing material and credentials
+.env
+.env.*
+!.env.example
+credentials.json
+keystore.properties
+local.properties
+*.keystore
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+
+# Installers, device data, logs and local tooling
+*.apk
+*.aab
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.log
+.claude/
+.vscode/
+.idea/
+*.orig.*
+.DS_Store
+Thumbs.db
