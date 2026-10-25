@@ -15,3 +15,11 @@ npm test
 ```
 
 在变更说明中写清具体行为、验证方式及限制，新增资源应注明来源和适用许可。
+
+## GitHub 流程
+
+从 main 创建工作分支，完成修改和本地检查后提交 Pull Request。GitHub Actions 会在 Ubuntu 和 Windows 上运行 lint、类型检查与完整回归；此流程不构建或发布安装包。
+
+一般变更使用 squash merge 合入 main，合并后清理工作分支。发布源代码版本与生成 APK 分开进行，安装包和签名凭据不提交到仓库。
+
+Create a working branch from main, run the local checks and open a pull request. CI runs lint, type checking and regression tests on Ubuntu and Windows without building or publishing an APK. Prefer squash merges and remove merged working branches. Keep installers and signing credentials out of Git.

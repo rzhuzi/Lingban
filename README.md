@@ -2,9 +2,13 @@
 
 # 零伴 · Lingban
 
+简体中文 · [English](README.en.md)
+
+[![CI](https://github.com/rzhuzi/Lingban/actions/workflows/ci.yml/badge.svg)](https://github.com/rzhuzi/Lingban/actions/workflows/ci.yml)
+
 一个可以自定义角色、记忆和模型的 Android AI 聊天应用。
 
-**0.1.0 · 首个公开测试版本的本地准备稿。** 需要自行配置兼容的模型接口和 API Key，模型调用费用由相应服务商收取。
+**0.1.0 · 早期源码测试版。** 本版本只提供源码，暂不提供 APK。需要自行配置兼容的模型接口和 API Key，模型调用费用由相应服务商收取。
 
 ## 功能
 
@@ -17,7 +21,7 @@
 
 ## 开始使用
 
-1. 安装对应版本的 APK。0.1.0 当前尚未构建或上传，后续安装包将通过 GitHub Releases 提供。
+1. 按下方“本地开发”构建并运行 Android 应用。0.1.0 暂无预编译安装包。
 2. 打开右上角菜单，进入“模型库”，添加接口地址与自己的 API Key。
 3. 获取并选择可用模型，使用“测试连接”检查配置。
 4. 打开“角色与记忆”，选择或新建角色，绑定模型并保存。
@@ -36,6 +40,8 @@ Android 的聊天和配置保存在本机，API Key 使用系统安全存储。�
 需要 Node.js 22.13 或更新版本；Android 调试还需要 JDK 和 Android SDK。
 
 ```sh
+git clone https://github.com/rzhuzi/Lingban.git
+cd Lingban
 npm ci
 npm run android
 ```
@@ -62,7 +68,7 @@ npm test
 - 官方思考前缀和第三方格式标记有各自适用条件，不能保证任意模型支持。
 - 聊天导出不是全量配置备份，当前没有对应的导入恢复功能。
 
-反馈请按[贡献指南](CONTRIBUTING.md)提供复现步骤，并移除 API Key 和私人聊天内容。
+反馈可提交到 [Issues](https://github.com/rzhuzi/Lingban/issues)，请按[贡献指南](CONTRIBUTING.md)提供复现步骤，并移除 API Key 和私人聊天内容。
 
 ## 许可
 
