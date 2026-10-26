@@ -15,8 +15,6 @@ An Android AI chat app with customizable personas, memory and model connections.
 
 Both APKs have the same features. Install one; choose Universal if you are unsure of your device's architecture.
 
-Version 0.1.1 uses a dedicated release signing key and cannot directly replace the internal 0.7.1 test build. Uninstalling the old build erases its local data, so save the information you need first. Chat JSON export is not a full backup and has no import or restore feature.
-
 ## Features
 
 - **Complete persona profiles:** Save a name, personality, avatar, cover, memories, model connection and prompt configuration together. Switch personas to use their saved configurations.
@@ -28,13 +26,13 @@ Version 0.1.1 uses a dedicated release signing key and cannot directly replace t
 
 ## Getting started
 
-1. Download the Android APK from the [0.1.1 release page](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1), verify its checksum, and follow the installation notes. You can also build it using the development steps below.
-2. Open the top-right menu, go to the model library, and add your endpoint and API key.
-3. Fetch and select an available model, then use the connection test.
-4. Open personas and memory, select or create a persona, bind a model, and save.
+1. Choose and install one Android APK from the [0.1.1 release page](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1). You can also build it using the development steps below.
+2. Open personas and memory from the top-right menu and enter the persona configuration page.
+3. Add a model under the persona's model settings. Enter your endpoint and API key, fetch or enter a model ID, and test the connection.
+4. Set the persona's name, personality and memories, then save its configuration.
 5. Return to chat. You can initially leave the extra thinking configuration off; persona instructions and memories still participate in requests.
 
-Connection presets do not mean every model has been tested with a live account. Third-party instruction presets are experimental text. See [compatibility and limitations](docs/COMPATIBILITY.md), currently documented in Chinese. The app's current interface is in Chinese.
+Available models and reasoning features depend on provider support. Third-party instruction presets are experimental text. See [compatibility and limitations](docs/COMPATIBILITY.md), currently documented in Chinese. The app's current interface is in Chinese.
 
 ## Data and privacy
 
@@ -71,8 +69,7 @@ See the [development guide](docs/DEVELOPMENT.md), [contribution guide](CONTRIBUT
 
 ## Current limitations
 
-- Real-device behavior and provider/account compatibility need further testing.
-- Pagination and search optimization for large conversation histories are not complete.
+- Loading and searching large conversation histories can be slow.
 - Unsent drafts are isolated by conversation and persona in the current app session's memory; they do not survive closing the app.
 - Official reasoning prefixes and third-party format markers have specific compatibility requirements; arbitrary models are not guaranteed to support them.
 - Conversation export is not a complete backup, and no corresponding import/restore flow exists.
