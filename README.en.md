@@ -27,7 +27,7 @@ Both APKs have the same features. Install one; choose Universal if you are unsur
 ## Getting started
 
 1. Choose and install one Android APK from the [0.1.1 release page](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1). You can also build it using the development steps below.
-2. Open personas and memory from the top-right menu and enter the persona configuration page.
+2. Open personas and memory from the top-right menu. If the persona overview is shown, tap “编辑角色配置” (Edit persona configuration).
 3. Add a model under the persona's model settings. Enter your endpoint and API key, fetch or enter a model ID, and test the connection.
 4. Set the persona's name, personality and memories, then save its configuration.
 5. Return to chat. You can initially leave the extra thinking configuration off; persona instructions and memories still participate in requests.
