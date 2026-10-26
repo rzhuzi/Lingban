@@ -10,6 +10,8 @@ An Android AI chat app with customizable personas, memory and model connections.
 
 **0.1.1 · Public test release.** Download the Android APK and checksum from the [0.1.1 release page](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1). Bring your own compatible model endpoint and API key; model providers charge for API usage according to their terms.
 
+Version 0.1.1 uses a dedicated release signing key and cannot directly replace the internal 0.7.1 test build. Uninstalling the old build erases its local data, so save the information you need first. Chat JSON export is not a full backup and has no import or restore feature.
+
 ## Features
 
 - **Complete persona profiles:** Save a name, personality, avatar, cover, memories, model connection and prompt configuration together. Switch personas to use their saved configurations.

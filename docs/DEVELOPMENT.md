@@ -48,6 +48,8 @@ npx eas-cli@latest build --platform android --profile preview
 
 公开 APK 应先确定专用发布签名并离线备份。Expo 生成的本地工程默认可能把 release 指向 debug 签名，不能据此视为已完成公开发布准备。密钥及凭据不提交 Git。签名改变会影响已安装内部测试包的覆盖升级，发布前需确认迁移方案。
 
+0.1.1 已按维护者选择生成专用发布签名，并在仓库外保存本机备份；维护者还需将恢复材料另行离线保管。证书 SHA256 为 `a7006c46131a75f9c9aaec11703b7709fdff6bdfe8c0761a429744db0c0f1aa5`。它与内部 0.7.1 的测试签名不同，不能覆盖安装旧包；卸载旧包前需自行保存资料，当前不提供完整备份或导入恢复。后续公开 APK 应沿用此发布签名。
+
 构建后使用 scripts/verify-android-bundle.cjs 检查 sourcemap 中 React、React Native、Expo 和 Safe Area 是否各一份，并核对包名、版本、证书和 APK 对齐。
 
 参考：[Expo SDK 58](https://docs.expo.dev/versions/v58.0.0/)、[APK 构建](https://docs.expo.dev/build-reference/apk/)、[应用签名](https://docs.expo.dev/app-signing/app-credentials/)。
