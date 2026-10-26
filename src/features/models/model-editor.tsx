@@ -1,10 +1,10 @@
 import { Typography } from '@/constants/typography';
 import { AppIcon as Ionicons } from '@/components/app-icon';
-import { router } from 'expo-router';
+import { router, usePreventRemove } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import { Card, DetailScreen, Field, Sheet, SmallAction } from '@/components/customization-ui';
+import { Card, DetailScreen, Field, Sheet, SmallAction, useConfirmation } from '@/components/customization-ui';
 import { ThemedText } from '@/components/themed-text';
 import { createId } from '@/features/companion/defaults';
 import { getModelThinkingConfig } from '@/features/companion/thinking-config';
@@ -27,6 +27,7 @@ export function ModelEditor({ model, initialApiKey, onComplete, onCancel }: {
   onComplete?: (draft: ModelEditorDraft) => void; onCancel?: () => void;
 }) {
   const theme = useTheme();
+  const { confirm, dialog } = useConfirmation();
   const initialProvider = getProvider(model?.provider ?? 'deepseek');
   const [id] = useState(() => model?.id ?? createId());
   const [name, setName] = useState(model?.name ?? initialProvider.label);
@@ -55,6 +56,8 @@ export function ModelEditor({ model, initialApiKey, onComplete, onCancel }: {
   const [keyReadError, setKeyReadError] = useState(false);
   const [providerSheet, setProviderSheet] = useState(false);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [allowLeave, setAllowLeave] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
@@ -63,6 +66,16 @@ export function ModelEditor({ model, initialApiKey, onComplete, onCancel }: {
   const provider = getProvider(providerId);
   const busy = saving || testing;
   const targetChanged = !!model && (providerId !== model.provider || baseUrl.trim() !== model.baseUrl);
+  const [initialValues] = useState(() => ({ name, providerId, baseUrl, apiModel, apiKey, anonymous }));
+  const dirty = name !== initialValues.name || providerId !== initialValues.providerId
+    || baseUrl !== initialValues.baseUrl || apiModel !== initialValues.apiModel
+    || apiKey !== initialValues.apiKey || anonymous !== initialValues.anonymous;
+  // Embedded connection forms are guarded by their owning role editor.
+  const disablePrevention = usePreventRemove(!onComplete && !allowLeave && (saving || dirty), ({ repeat }) => {
+    if (savingRef.current) return;
+    confirm({ title: '放弃未保存的模型修改？', message: '当前输入的修改和新密钥尚未保存。', confirmLabel: '放弃修改', destructive: true,
+      onConfirm: () => { if (!savingRef.current) { setAllowLeave(true); repeat(); } } });
+  });
 
   useEffect(() => {
     mounted.current = true;
@@ -186,7 +199,7 @@ export function ModelEditor({ model, initialApiKey, onComplete, onCancel }: {
   }
 
   async function save() {
-    if (busy) return;
+    if (busy || savingRef.current) return;
     cancelModelFetch();
     setError(null);
     try {
@@ -203,16 +216,19 @@ export function ModelEditor({ model, initialApiKey, onComplete, onCancel }: {
         onComplete({ model: record, apiKey: replacement });
         return;
       }
+      savingRef.current = true;
       setSaving(true);
       await saveModelConfiguration(record, replacement);
       if (mounted.current) {
+        setAllowLeave(true);
+        disablePrevention();
         setApiKey('');
         if (router.canGoBack()) router.back();
         else router.replace('/models');
       }
     } catch (failure) {
       if (mounted.current) setError(failure instanceof Error ? failure.message : '保存失败，请重试。');
-    } finally { if (mounted.current) setSaving(false); }
+    } finally { savingRef.current = false; if (mounted.current) setSaving(false); }
   }
 
   async function test() {
@@ -333,6 +349,7 @@ export function ModelEditor({ model, initialApiKey, onComplete, onCancel }: {
         {providerId === item.id ? <Ionicons name="checkmark" size={20} color={theme.primary} /> : null}
       </Pressable>)}
     </Sheet>
+    {dialog}
   </DetailScreen>;
 }
 

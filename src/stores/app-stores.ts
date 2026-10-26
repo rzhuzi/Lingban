@@ -14,6 +14,7 @@ import { DEFAULT_SETTINGS, type AppSettings, type AppSnapshot, type MessageRecor
 
 import { createWriteQueue } from './write-queue';
 import { useThinkingEditorStore } from './thinking-editor-store';
+import { chatDraftKey, useChatDraftStore } from './chat-draft-store';
 
 type PersistedState = { ready: boolean; saveError: string | null };
 type PersonaState = PersistedState & {
@@ -123,6 +124,7 @@ export function getCompanionForPersona(id?: string | null): { data: CompanionDat
 
 /** Hydrate a completed reset/startup snapshot; maintenance ownership stays with its caller. */
 export function applyAppSnapshot(snapshot: AppSnapshot): void {
+  useChatDraftStore.getState().clearDrafts();
   useAppRecoveryStore.setState({ notice: snapshot.notice, migrationNotice: snapshot.migrationNotice ?? null, migrationError: null, migrationBusy: false });
   applyPersonaSnapshot(snapshot);
   usePersonaStore.setState({ busy: false });
@@ -313,6 +315,7 @@ export const usePersonaStore = create<PersonaState>()((set, get) => ({
       requireWritable();
       await writes.run(async () => {
         applyPersonaSnapshot(await repository.deletePersona(id));
+        useChatDraftStore.getState().discardDraft(chatDraftKey(null, id));
         useChatStore.setState((state) => ({ sessions: state.sessions.map((session) => session.personaId === id
           ? { ...session, personaId: null } : session) }));
       });

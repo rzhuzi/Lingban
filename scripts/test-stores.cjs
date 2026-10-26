@@ -116,8 +116,30 @@ function harness() {
   stored = { companion: createDefaultData(), settings: clone(DEFAULT_SETTINGS), models: [], sessions: [], messages: [], notice: null };
   const stores = load('src/stores/app-stores.ts');
   return { ...stores, repository, calls, credentials, reset, runtime: load('src/lib/chat/runtime.ts'),
-    thinking: load('src/features/companion/thinking-config.ts'), editor: load('src/stores/thinking-editor-store.ts'), stored: () => stored };
+    thinking: load('src/features/companion/thinking-config.ts'), editor: load('src/stores/thinking-editor-store.ts'),
+    drafts: load('src/stores/chat-draft-store.ts').useChatDraftStore, stored: () => stored };
 }
+
+test('app snapshot reset clears transient chat drafts while ordinary role switching retains them', async () => {
+  const app = harness(); await app.initializeStores();
+  app.drafts.getState().updateDraft('new:persona-default', '原角色未发送草稿');
+  await app.usePersonaStore.getState().createPersona('第二个角色');
+  app.drafts.getState().updateDraft('session:history', '历史会话未发送草稿');
+  assert.equal(app.drafts.getState().drafts['new:persona-default'].text, '原角色未发送草稿');
+  app.applyAppSnapshot(clone(app.stored()));
+  assert.deepEqual(app.drafts.getState().drafts, {});
+});
+
+test('deleting a role clears its blank-chat draft while preserving drafts belonging to retained history', async () => {
+  const app = harness(); await app.initializeStores();
+  await app.usePersonaStore.getState().createPersona('第二个角色');
+  const roleId = app.usePersonaStore.getState().activePersonaId;
+  app.drafts.getState().updateDraft(`new:${roleId}`, '待删除角色的草稿');
+  app.drafts.getState().updateDraft('session:history', '保留在历史中的草稿');
+  await app.usePersonaStore.getState().deletePersona(roleId);
+  assert.equal(app.drafts.getState().drafts[`new:${roleId}`], undefined);
+  assert.equal(app.drafts.getState().drafts['session:history'].text, '保留在历史中的草稿');
+});
 
 function modelRecord() {
   return {

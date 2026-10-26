@@ -18,12 +18,12 @@ const existingModel = {
 
 // Run the real component with persistent state/ref slots and controlled mount effects.
 // Hold entry-time auto-discovery timers so tests drive explicit rendered input events.
-async function harness(model, extraProps = {}) {
+async function harness(model, extraProps = {}, controls = {}) {
   const slots = [];
   const effects = [];
   let cursor = 0;
   let tree;
-  const calls = { list: [], storedKeyReads: [], saves: [] };
+  const calls = { list: [], storedKeyReads: [], saves: [], confirmations: [], routes: [], prevent: null, disabled: 0 };
   const react = {
     useState(initial) {
       const index = cursor++;
@@ -61,8 +61,9 @@ async function harness(model, extraProps = {}) {
     'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'Fragment' },
     'react-native': native,
     '@/components/app-icon': { AppIcon: 'Ionicons' },
-    'expo-router': { router: { canGoBack: () => false, back() {}, replace() {}, push() {} } },
-    '@/components/customization-ui': ui,
+    'expo-router': { router: { canGoBack: () => false, back: () => calls.routes.push('back'), replace: (route) => calls.routes.push(route), push() {} },
+      usePreventRemove: (flag, callback) => { calls.prevent = { flag, callback }; return () => { calls.disabled += 1; }; } },
+    '@/components/customization-ui': { ...ui, useConfirmation: () => ({ confirm: (request) => calls.confirmations.push(request), dialog: null }) },
     '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/features/companion/defaults': { createId: () => 'new-fixture-model' },
     '@/hooks/use-theme': { useTheme: () => ({}) },
@@ -75,7 +76,7 @@ async function harness(model, extraProps = {}) {
     './model-service': {
       getModelKeySummary: async () => ({ configured: !!model?.apiKeyAlias, lastFour: 'tial' }),
       getModelApiKey: async (alias) => { calls.storedKeyReads.push(alias); return STORED_KEY; },
-      saveModelConfiguration: async (...args) => { calls.saves.push(args); },
+      saveModelConfiguration: async (...args) => { calls.saves.push(args); if (controls.save) await controls.save(); },
     },
     './model-cleanup-warning': { ModelCleanupWarning: 'ModelCleanupWarning' },
     './remote-model-picker': { RemoteModelPicker: 'RemoteModelPicker' },
@@ -138,7 +139,7 @@ async function harness(model, extraProps = {}) {
     render();
     if (!effects.length) break;
   }
-  return { calls, change, field, fetchModels, async press(label) {
+  return { calls, change, field, fetchModels, render, async settle() { await new Promise((resolve) => setImmediate(resolve)); render(); }, async press(label) {
     const node = find((item) => item.props.accessibilityLabel === label, tree);
     assert.ok(node, `Expected action: ${label}`);
     node.props.onPress(); await new Promise((resolve) => setImmediate(resolve)); render();
@@ -153,6 +154,58 @@ async function harness(model, extraProps = {}) {
     return texts.join(' ');
   } };
 }
+
+test('standalone editor protects edits but not an untouched or restored form', async () => {
+  const app = await harness(existingModel);
+  assert.equal(app.calls.prevent?.flag, false);
+  app.change('API Key', NEW_KEY);
+  assert.equal(app.calls.prevent?.flag, true);
+  let repeated = 0;
+  app.calls.prevent.callback({ repeat: () => { repeated += 1; } });
+  assert.equal(repeated, 0);
+  assert.equal(app.calls.confirmations.length, 1);
+  assert.equal(app.field('API Key').props.value, NEW_KEY);
+  app.calls.confirmations[0].onConfirm(); app.render();
+  assert.equal(repeated, 1); assert.equal(app.calls.prevent.flag, false);
+  assert.equal(app.calls.saves.length, 0);
+
+  const restored = await harness(existingModel);
+  restored.change('模型名称', '修改名称'); assert.equal(restored.calls.prevent.flag, true);
+  restored.change('模型名称', existingModel.name); assert.equal(restored.calls.prevent.flag, false);
+});
+
+test('new untouched model and embedded model draft do not add a second leave guard', async () => {
+  const untouched = await harness();
+  assert.equal(untouched.calls.prevent?.flag, false);
+  const embedded = await harness(undefined, { initialApiKey: NEW_KEY, onComplete() {} });
+  embedded.change('API 地址', NEW_URL);
+  assert.equal(embedded.calls.prevent?.flag, false);
+  assert.equal(embedded.calls.confirmations.length, 0);
+});
+
+test('standalone save blocks removal while pending and disables protection only after success', async () => {
+  let resolve;
+  const pending = new Promise((done) => { resolve = done; });
+  const app = await harness(existingModel, {}, { save: () => pending });
+  app.change('模型名称', '已修改');
+  await app.press('保存模型');
+  assert.equal(app.calls.prevent?.flag, true);
+  app.calls.prevent.callback({ repeat: () => assert.fail('saving must not leave') });
+  assert.equal(app.calls.confirmations.length, 0);
+  assert.deepEqual(app.calls.routes, []);
+  resolve(); await app.settle();
+  assert.equal(app.calls.disabled, 1);
+  assert.equal(app.calls.prevent.flag, false);
+  assert.deepEqual(app.calls.routes, ['/models']);
+});
+
+test('failed standalone save keeps edits protected and retryable', async () => {
+  const app = await harness(existingModel, {}, { save: () => { throw new Error('fixture save failed'); } });
+  app.change('模型名称', '仍需保存'); await app.press('保存模型');
+  assert.equal(app.calls.prevent?.flag, true);
+  assert.equal(app.calls.disabled, 0); assert.deepEqual(app.calls.routes, []);
+  assert.equal(app.field('模型名称').props.value, '仍需保存');
+});
 
 test('new model retains an explicitly entered key across repeated URL edits and discovers at the final URL', async () => {
   const app = await harness();

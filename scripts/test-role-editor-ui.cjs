@@ -180,6 +180,51 @@ test('new model credentials stay local and are handed to a single role save with
   assert.ok(!JSON.stringify(calls.saves[0][0]).includes('fixture-local-credential'));
 });
 
+test('discarding an edited temporary model permits saving the selected existing model and other edits', async () => {
+  const { app, calls } = environment();
+  app.press('第三方指令配置'); app.change('自定义指令', '保留 A 的修改');
+  app.press('添加模型');
+  app.nodes((node) => node.type === 'ModelEditor')[0].props.onComplete({ model: model('temporary'), apiKey: 'temporary-key' }); app.render();
+  app.press('普通提示词'); app.change('额外回答要求', '放弃临时模型的修改');
+  app.press('为这个角色选择模型'); app.press('使用模型：B');
+  app.press('保存角色配置'); await app.settle();
+  assert.equal(calls.saves.length, 1);
+  const [saved, , pending] = calls.saves[0];
+  assert.equal(saved.configuration.currentModelId, 'B');
+  assert.equal(saved.configuration.models.temporary, undefined);
+  assert.equal(saved.configuration.models.A.thinking.instruction.applied.text, '保留 A 的修改');
+  assert.equal(pending, null);
+  assert.ok(!app.text().includes('编辑的模型已不存在'));
+});
+
+test('replacing an edited temporary model does not leave the discarded model blocking the role save', async () => {
+  const { app, calls } = environment();
+  app.press('添加模型');
+  app.nodes((node) => node.type === 'ModelEditor')[0].props.onComplete({ model: model('temporary-old'), apiKey: 'old-local-key' }); app.render();
+  app.press('第三方指令配置'); app.change('自定义指令', '放弃的指令');
+  app.press('编辑待添加的模型');
+  app.nodes((node) => node.type === 'ModelEditor')[0].props.onComplete({ model: model('temporary-new'), apiKey: 'new-local-key' }); app.render();
+  app.press('普通提示词'); app.change('额外回答要求', '新模型的独立提示词');
+  app.press('保存角色配置'); await app.settle();
+  assert.equal(calls.saves.length, 1);
+  const [saved, , pending] = calls.saves[0];
+  assert.equal(saved.configuration.currentModelId, 'temporary-new');
+  assert.equal(saved.configuration.models['temporary-old'], undefined);
+  assert.equal(saved.configuration.models['temporary-new'].thinking.persona.applied.text, '新模型的独立提示词');
+  assert.equal(pending.model.id, 'temporary-new');
+  assert.equal(pending.apiKey, 'new-local-key');
+});
+
+test('an edited saved model deleted elsewhere still blocks saving after selecting another model', async () => {
+  const { app, calls, models } = environment();
+  app.press('第三方指令配置'); app.change('自定义指令', '不能静默丢弃的已保存模型修改');
+  app.press('为这个角色选择模型'); app.press('使用模型：B');
+  models.splice(models.findIndex((item) => item.id === 'A'), 1); app.render();
+  app.press('保存角色配置'); await app.settle();
+  assert.equal(calls.saves.length, 0);
+  assert.match(app.text(), /编辑的模型已不存在/);
+});
+
 test('navigation remains blocked during the asynchronous save instead of discarding the in-flight edit', async () => {
   let resolve; const wait = new Promise((done) => { resolve = done; });
   const { app, calls } = environment(role(), { wait });

@@ -42,7 +42,7 @@ eas.json 提供生成 APK 的 preview profile。维护者配置自己的 Expo �
 npx eas-cli@latest build --platform android --profile preview
 ```
 
-这会使用 EAS 云端服务并可能要求登录、创建项目与管理签名，属于单独的发布操作，本仓库整理没有执行它。
+这会使用 EAS 云端服务并可能要求登录、创建项目与管理签名，属于单独的发布操作。具体版本的构建方式与验证范围以对应 GitHub Release 说明为准。
 
 本地构建可先运行 `npx expo prebuild --platform android --no-install`，再使用生成目录中的 Gradle。Windows 遇到 CMake 路径长度限制时使用较短路径和物理依赖副本，避免构建目录通过 junction 混用其他项目依赖。
 
@@ -54,6 +54,8 @@ npx eas-cli@latest build --platform android --profile preview
 
 ## 版本与基线
 
-本仓库以内部 0.7.1 的源码为基线，来源提交为 `b6d50609120013877a39acf00b468ba6e7b4a996`；业务源码与数据格式沿用该基线。公开版本为 0.1.0，Android 内部版本号为 14，包名保持 com.lingban.app。
+本仓库以内部 0.7.1 的源码为基线，来源提交为 `b6d50609120013877a39acf00b468ba6e7b4a996`；业务源码与数据格式沿用该基线。当前公开版本为 0.1.1，Android versionCode 为 15，包名保持 com.lingban.app。
+
+0.1.0 是仅提供源码的历史测试版，没有对应 APK。0.1.1 的安装包与校验和见 [GitHub Release](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1)。当前本地自动回归为 387 项通过，lint 与类型检查通过；安装、升级、真机交互和真实模型账号验证应单独记录，不能由自动检查推定完成。
 
 内部仓库保留完整开发历史，本仓库从新的本地初始提交开始，不携带旧阶段报告、安装包或旧 Git 历史。数据迁移及相关测试保留，不能按“旧版本残留”删除。

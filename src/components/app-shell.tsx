@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 11,
   },
-  navigationItemText: { ...Typography.row, flex: 1 },
+  navigationItemText: { ...Typography.row, fontWeight: '700', flex: 1 },
   menuDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: 8, marginVertical: 5 },
   activeMark: { width: 6, height: 6, borderRadius: 3 },
   welcome: {

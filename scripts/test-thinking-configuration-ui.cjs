@@ -42,7 +42,8 @@ function environment(route = { id: 'B' }) {
   const cot = { thinking, async renameThinkingVariable() {} };
   const useCot = (select) => select(cot); useCot.getState = () => cot;
   const seams = {
-    'expo-router': { useLocalSearchParams: () => route, router: { push: (value) => navigations.push(value), canGoBack: () => false, replace() {}, back() {} } },
+    'expo-router': { useLocalSearchParams: () => route, usePreventRemove: () => () => {},
+      router: { push: (value) => navigations.push(value), canGoBack: () => false, replace() {}, back() {} } },
     '@/features/companion/companion-store': { useCompanion: () => ({ data, updateThinking: (patch) => Object.assign(thinking, patch) }) },
     '@/stores/app-stores': { useModelStore: useModels, useCotStore: useCot, usePersonaStore: (select) => select({ personas: [] }), useAppMaintenanceStore: (select) => select(maintenance) },
     '@/stores/thinking-editor-store': { useThinkingEditorStore: useEditor },

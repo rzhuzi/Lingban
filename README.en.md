@@ -8,7 +8,7 @@
 
 An Android AI chat app with customizable personas, memory and model connections.
 
-**0.1.0 · Early source-only preview.** No prebuilt APK is provided for this version. Bring your own compatible model endpoint and API key; model providers charge for API usage according to their terms.
+**0.1.1 · Public test release.** Download the Android APK and checksum from the [0.1.1 release page](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1). Bring your own compatible model endpoint and API key; model providers charge for API usage according to their terms.
 
 ## Features
 
@@ -21,7 +21,7 @@ An Android AI chat app with customizable personas, memory and model connections.
 
 ## Getting started
 
-1. Build and run the Android app using the development steps below. There is no precompiled 0.1.0 installer.
+1. Download the Android APK from the [0.1.1 release page](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1), verify its checksum, and follow the installation notes. You can also build it using the development steps below.
 2. Open the top-right menu, go to the model library, and add your endpoint and API key.
 3. Fetch and select an available model, then use the connection test.
 4. Open personas and memory, select or create a persona, bind a model, and save.
@@ -66,7 +66,7 @@ See the [development guide](docs/DEVELOPMENT.md), [contribution guide](CONTRIBUT
 
 - This is an early test version. Real-device behavior and provider/account compatibility need further testing.
 - Pagination and search optimization for large conversation histories are not complete.
-- An expanded reasoning block may collapse when the first answer text arrives during streaming.
+- Unsent drafts are isolated by conversation and persona in the current app session's memory; they do not survive closing the app.
 - Official reasoning prefixes and third-party format markers have specific compatibility requirements; arbitrary models are not guaranteed to support them.
 - Conversation export is not a complete backup, and no corresponding import/restore flow exists.
 - Android is the primary target; iOS has not been validated.

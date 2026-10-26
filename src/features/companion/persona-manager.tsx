@@ -7,6 +7,7 @@ import { Sheet, SmallAction, useConfirmation } from '@/components/customization-
 import { RoleAvatar } from '@/components/role-avatar';
 import { ThemedText } from '@/components/themed-text';
 import { Typography } from '@/constants/typography';
+import { useChatRole } from '@/features/chat/use-chat-role';
 import { useTheme } from '@/hooks/use-theme';
 import { startNewConversation } from '@/lib/chat/engine';
 import { useChatRuntimeStore } from '@/lib/chat/runtime';
@@ -14,6 +15,7 @@ import { useAppMaintenanceStore, useModelStore, usePersonaStore } from '@/stores
 
 export function PersonaManager({ disabled = false }: { disabled?: boolean }) {
   const theme = useTheme();
+  const { roleId } = useChatRole();
   const { personas, activePersonaId, busy, switchPersona, deletePersona } = usePersonaStore();
   const models = useModelStore((state) => state.models);
   const maintenance = useAppMaintenanceStore((state) => state.active);
@@ -37,9 +39,12 @@ export function PersonaManager({ disabled = false }: { disabled?: boolean }) {
         const model = models.find((item) => item.id === persona.configuration?.currentModelId);
         return <View key={persona.id} style={[styles.row, { borderColor: theme.border }]}>
           <Pressable accessibilityRole="radio" accessibilityLabel={'切换角色：' + persona.profile.name}
-            accessibilityState={{ checked: persona.id === activePersonaId, disabled: locked }} disabled={locked}
+            accessibilityState={{ checked: persona.id === roleId, disabled: locked }} disabled={locked}
             onPress={() => { void act(async () => {
-              if (persona.id !== activePersonaId) { await switchPersona(persona.id); startNewConversation(); }
+              if (persona.id !== activePersonaId || persona.id !== roleId) {
+                await switchPersona(persona.id);
+                startNewConversation();
+              }
               setVisible(false);
               if (!persona.configuration?.confirmed) router.push({ pathname: '/role', params: { id: persona.id } });
               else router.replace('/(tabs)');
@@ -48,7 +53,7 @@ export function PersonaManager({ disabled = false }: { disabled?: boolean }) {
             <View style={styles.copy}><ThemedText numberOfLines={1} style={styles.name}>{persona.profile.name}</ThemedText>
               <ThemedText themeColor="textSecondary" numberOfLines={1} style={styles.meta}>{persona.configuration?.confirmed
                 ? model?.name ?? '模型不可用' : '待确认模型配置'}</ThemedText></View>
-            {persona.id === activePersonaId ? <AppIcon name="checkmark" size={17} color={theme.primary} /> : null}
+            {persona.id === roleId ? <AppIcon name="checkmark" size={17} color={theme.primary} /> : null}
           </Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={'编辑角色：' + persona.profile.name} disabled={locked}
             onPress={() => { setVisible(false); router.push({ pathname: '/role', params: { id: persona.id } }); }} style={styles.action}>

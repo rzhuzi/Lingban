@@ -197,6 +197,11 @@ export function RoleEditor({ persona, isNew, focusThinking, requestedModelId, ad
   const patchConfiguration = (patch: Partial<RoleConfiguration>) => {
     setError(null); setNotice(null); setDraft((current) => ({ ...current, configuration: { ...current.configuration!, ...patch } }));
   };
+  const discardTemporaryModel = (next: RoleConfiguration, modelId: string) => {
+    delete next.models[modelId];
+    editedModelIds.current.delete(modelId);
+    openedModelIds.current.delete(modelId);
+  };
   const patchBinding = (patch: Partial<RoleModelConfiguration>) => {
     if (selectedModel && binding) {
       editedModelIds.current.add(selectedModel.id);
@@ -286,7 +291,7 @@ export function RoleEditor({ persona, isNew, focusThinking, requestedModelId, ad
 
   if (modelEditor) return <><ModelEditor model={pendingModel?.model} initialApiKey={pendingModel?.apiKey} onCancel={() => setModelEditor(false)}
     onComplete={(result) => { setPendingModel(result); setModelEditor(false); const next = copy(configuration);
-      if (pendingModel && pendingModel.model.id !== result.model.id) delete next.models[pendingModel.model.id];
+      if (pendingModel && pendingModel.model.id !== result.model.id) discardTemporaryModel(next, pendingModel.model.id);
       next.currentModelId = result.model.id; next.models[result.model.id] ??= getRoleModelConfiguration(next, result.model.id); patchConfiguration(next); }} />{dialog}</>;
 
   return <DetailScreen title={isNew ? '新建角色' : editing ? '编辑角色' : '角色'} onBack={!isNew && editing ? showOverview : leave} scrollRef={scrollRef} right={<PersonaManager disabled={dirty || locked} />}
@@ -453,7 +458,7 @@ export function RoleEditor({ persona, isNew, focusThinking, requestedModelId, ad
           ? editingBinding(createRoleModelConfiguration(model, globalThinking)) : getRoleModelConfiguration(next, model.id);
           else if (!openedModelIds.current.has(model.id)) next.models[model.id] = editingBinding(next.models[model.id]);
           openedModelIds.current.add(model.id);
-          next.currentModelId = model.id; if (pendingModel && pendingModel.model.id !== model.id) { delete next.models[pendingModel.model.id]; setPendingModel(null); }
+          next.currentModelId = model.id; if (pendingModel && pendingModel.model.id !== model.id) { discardTemporaryModel(next, pendingModel.model.id); setPendingModel(null); }
           patchConfiguration(next); setModelPicker(false); }} style={[s.modelRow, { backgroundColor: model.id === selectedModel?.id ? theme.primarySurface : theme.background, borderColor: theme.border }]}>
         <View style={s.flex}><ThemedText numberOfLines={1} style={s.label}>{model.name}</ThemedText><ThemedText numberOfLines={1} themeColor="textSecondary" style={s.note}>
           {model.apiModel} · {THINKING_MODE_LABELS[configuration.models[model.id]?.mode ?? (!isNew && !configuration.confirmed ? model.cotMode : 'off')]}</ThemedText></View>
