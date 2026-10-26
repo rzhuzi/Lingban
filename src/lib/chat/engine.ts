@@ -3,6 +3,7 @@ import { getModelApiKey } from '@/features/models/model-service';
 import { streamChat } from '@/lib/api/stream';
 import { repository } from '@/lib/db/repository';
 import { initializeStores, useChatStore, useModelStore, usePersonaStore, useSettingsStore, getCompanionForPersona, isAppMaintenanceActive } from '@/stores/app-stores';
+import { chatDraftKey, useChatDraftStore } from '@/stores/chat-draft-store';
 
 import { createChatEngine } from './engine-core';
 import { useChatRuntimeStore } from './runtime';
@@ -18,4 +19,9 @@ const engine = createChatEngine({
 });
 
 export const { sendChatMessage, retryChatMessage, stopGeneration, retryChatPersistence,
-  startNewConversation, openChatSession, deleteChatSession, withChatMaintenance } = engine;
+  startNewConversation, openChatSession, withChatMaintenance } = engine;
+
+export async function deleteChatSession(id: string) {
+  await engine.deleteChatSession(id);
+  useChatDraftStore.getState().discardDraft(chatDraftKey(id, ''));
+}

@@ -13,8 +13,8 @@ import { AuditSheet } from './audit-sheet';
 
 function ReasoningBlock({ message, onToggle }: { message: MessageRecord; onToggle?: () => void }) {
   const theme = useTheme();
-  // The first answer token collapses the thought; recycling never carries another message's toggle.
-  const [expanded, setExpanded] = useRecyclingState(false, [message.id, !!message.content]);
+  // Preserve the user's choice as output grows; recycling still resets a different message.
+  const [expanded, setExpanded] = useRecyclingState(false, [message.id]);
   const thinking = ['pending', 'streaming'].includes(message.status) && !message.content;
   return <View style={styles.reasoning}>
     <Pressable accessibilityRole="button" accessibilityLabel={expanded ? '收起思考过程' : '展开思考过程'}

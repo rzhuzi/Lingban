@@ -100,6 +100,113 @@ test('new output follows after size-only scroll events, while upward reading sta
   assert.equal(app.calls.length, 2, 'Completed messages do not auto-scroll on layout.');
 });
 
+test('manually scrolling back to the bottom resumes following after a reasoning toggle', () => {
+  const app = messageListHarness();
+  app.scroll(400);
+  app.list().props.renderItem({ item: app.props.messages[1] }).props.onReasoningToggle();
+  app.list().props.onScrollBeginDrag?.();
+  app.scroll(100);
+  app.output('阅读旧内容时新增输出'); app.resize();
+  assert.equal(app.calls.length, 0);
+  app.scroll(400);
+  app.list().props.onScrollEndDrag?.({ nativeEvent: { contentOffset: { y: 400 }, contentSize: { height: 1000 }, layoutMeasurement: { height: 600 }, velocity: { x: 0, y: 0 } } });
+  app.output('回到底部后的新输出'); app.resize();
+  assert.equal(app.calls.length, 1);
+});
+
+test('a drag finishing with momentum at the bottom restores following without a layout-only resume', () => {
+  const app = messageListHarness();
+  app.scroll(400);
+  app.list().props.renderItem({ item: app.props.messages[1] }).props.onReasoningToggle();
+  app.list().props.onScrollBeginDrag?.();
+  app.scroll(100);
+  app.scroll(200);
+  const event = (y) => ({ nativeEvent: { contentOffset: { y }, contentSize: { height: 1000 }, layoutMeasurement: { height: 600 }, velocity: { x: 0, y: 1 } } });
+  app.list().props.onScrollEndDrag?.(event(200));
+  app.list().props.onMomentumScrollBegin?.(event(200));
+  app.scroll(400);
+  app.output('惯性滚动结束前'); app.resize();
+  assert.equal(app.calls.length, 0, 'A layout scroll after finger release cannot resume following by itself.');
+  app.list().props.onMomentumScrollEnd?.(event(400));
+  app.output('惯性滚动已回到底部'); app.resize();
+  assert.equal(app.calls.length, 1);
+});
+
+test('an upward drag inside the bottom threshold never gets interrupted by new output', () => {
+  const app = messageListHarness(); app.scroll(400);
+  app.list().props.renderItem({ item: app.props.messages[1] }).props.onReasoningToggle();
+  app.list().props.onScrollBeginDrag?.(); app.scroll(350);
+  app.output('向上阅读时的输出'); app.resize();
+  assert.equal(app.calls.length, 0);
+  app.list().props.onScrollEndDrag?.({ nativeEvent: { contentOffset: { y: 350 }, contentSize: { height: 1000 }, layoutMeasurement: { height: 600 }, velocity: { x: 0, y: 0 } } });
+  app.output('释放手指后继续阅读'); app.resize();
+  assert.equal(app.calls.length, 0);
+});
+
+test('a drag without momentum cannot lend its resume intent to a later programmatic scroll', () => {
+  const app = messageListHarness(); app.scroll(400);
+  app.list().props.renderItem({ item: app.props.messages[1] }).props.onReasoningToggle();
+  app.list().props.onScrollBeginDrag?.(); app.scroll(100); app.scroll(200);
+  app.list().props.onScrollEndDrag?.({ nativeEvent: { contentOffset: { y: 200 }, contentSize: { height: 1000 }, layoutMeasurement: { height: 600 }, velocity: { x: 0, y: 0 } } });
+  const event = { nativeEvent: { contentOffset: { y: 400 }, contentSize: { height: 1000 }, layoutMeasurement: { height: 600 } } };
+  app.list().props.onMomentumScrollBegin?.(event); app.scroll(400); app.list().props.onMomentumScrollEnd?.(event);
+  app.output('程序滚动不表示恢复跟随'); app.resize();
+  assert.equal(app.calls.length, 0);
+});
+
+test('a reasoning toggle invalidates a pending momentum resume from an earlier drag', () => {
+  const app = messageListHarness();
+  app.list().props.onScrollBeginDrag?.();
+  app.list().props.onScrollEndDrag?.({ nativeEvent: { contentOffset: { y: 100 }, contentSize: { height: 1000 }, layoutMeasurement: { height: 600 } } });
+  app.list().props.renderItem({ item: app.props.messages[1] }).props.onReasoningToggle();
+  app.list().props.onMomentumScrollEnd?.({ nativeEvent: { contentOffset: { y: 400 }, contentSize: { height: 1000 }, layoutMeasurement: { height: 600 } } });
+  app.output('展开后保留阅读位置'); app.resize();
+  assert.equal(app.calls.length, 0);
+});
+
+test('the first drag has a native geometry baseline even before any scroll event', () => {
+  const app = messageListHarness();
+  const event = (y) => ({ nativeEvent: { contentOffset: { y }, contentSize: { height: 1000 }, layoutMeasurement: { height: 600 }, velocity: { x: 0, y: 0 } } });
+  app.list().props.renderItem({ item: app.props.messages[1] }).props.onReasoningToggle();
+  app.list().props.onScrollBeginDrag?.(event(0));
+  app.scroll(400);
+  app.list().props.onScrollEndDrag?.(event(400));
+  app.output('首次手动回到底部'); app.resize();
+  assert.equal(app.calls.length, 1);
+});
+
+test('the drag end includes final downward movement missed by throttled scroll events', () => {
+  const app = messageListHarness();
+  const event = (y) => ({ nativeEvent: { contentOffset: { y }, contentSize: { height: 1000 }, layoutMeasurement: { height: 600 }, velocity: { x: 0, y: 0 } } });
+  app.list().props.renderItem({ item: app.props.messages[1] }).props.onReasoningToggle();
+  app.list().props.onScrollBeginDrag?.(event(100));
+  app.list().props.onScrollEndDrag?.(event(400));
+  app.output('释放事件记录最后位移'); app.resize();
+  assert.equal(app.calls.length, 1);
+});
+
+test('scrolling down through continuously growing streamed content still restores following', () => {
+  const app = messageListHarness(); app.scroll(100);
+  const event = (y, height) => ({ nativeEvent: { contentOffset: { y }, contentSize: { height }, layoutMeasurement: { height: 600 }, velocity: { x: 0, y: 0 } } });
+  app.list().props.renderItem({ item: app.props.messages[1] }).props.onReasoningToggle();
+  app.list().props.onScrollBeginDrag?.(event(100, 1000));
+  app.scroll(300, 1100); app.scroll(600, 1200);
+  app.list().props.onScrollEndDrag?.(event(600, 1200));
+  app.output('不断增长时仍跟随'); app.resize();
+  assert.equal(app.calls.length, 1);
+});
+
+test('height-only changes during a stationary drag never restore a paused turn', () => {
+  const app = messageListHarness(); app.scroll(400);
+  const event = { nativeEvent: { contentOffset: { y: 400 }, contentSize: { height: 1000 }, layoutMeasurement: { height: 600 }, velocity: { x: 0, y: 0 } } };
+  app.list().props.renderItem({ item: app.props.messages[1] }).props.onReasoningToggle();
+  app.list().props.onScrollBeginDrag?.(event);
+  app.scroll(400, 1200); app.scroll(400, 1000);
+  app.list().props.onScrollEndDrag?.(event);
+  app.output('只有布局改变'); app.resize();
+  assert.equal(app.calls.length, 0);
+});
+
 test('settings keeps chat in history; switching main pages replaces only the secondary page', () => {
   const env = environment();
   const app = createUiHarness('src/components/app-shell.tsx', 'AppShell', env.seams);

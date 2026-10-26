@@ -5,6 +5,7 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 const ts = require('typescript');
+const { createChatDraftStore, chatDraftKey, EMPTY_CHAT_DRAFT } = require('./helpers/chat-draft-store.cjs');
 
 // Execute the real UI with persistent hooks. Native rendering/keyboard motion still
 // needs device QA; this seam verifies the actual props, callbacks and animation tree.
@@ -210,24 +211,36 @@ test('LB-0501: an old preference lookup cannot override a newer system event', a
   assert.equal(app.runs.length, 0);
 });
 
-function composerHarness() {
-  const runtime = { isSending: false, hasUnsaved: false };
-  const maintenance = { active: false };
-  const personas = { personas: [], busy: false };
-  const models = { models: [{}] };
-  const sends = [];
+function composerHarness(shared = {}) {
+  const runtime = shared.runtime ?? { isSending: false, hasUnsaved: false };
+  const maintenance = shared.maintenance ?? { active: false };
+  const personas = shared.personas ?? { personas: [], activePersonaId: 'role-a', busy: false };
+  const models = shared.models ?? { models: [{}] };
+  const chat = shared.chat ?? { sessions: [], activeSessionId: null };
+  const sends = shared.sends ?? [];
+  const drafts = shared.drafts ?? createChatDraftStore();
   let stops = 0;
   let selections = 0;
   const app = componentHarness('src/features/chat/chat-composer.tsx', 'ChatComposer', {
     'react-native': nativeSeam(),
     '@/features/companion/companion-store': { useCompanion: () => ({ data: { profile: { name: '伙伴' } } }) },
     '@/lib/chat/runtime': { useChatRuntimeStore: (select) => select(runtime) },
+    '@/stores/chat-draft-store': { chatDraftKey, EMPTY_CHAT_DRAFT,
+      useChatDraftStore: Object.assign((select) => select(drafts.getState()), { getState: drafts.getState }) },
     '@/lib/chat/engine': {
-      sendChatMessage: async (text, accepted) => { sends.push({ text, accepted }); runtime.isSending = true; },
+      sendChatMessage: async (text, accepted) => {
+        const capturedId = chat.activeSessionId ?? 'accepted-session';
+        sends.push({ text, accepted: (id = capturedId) => {
+          if (chat.activeSessionId === null) chat.activeSessionId = id;
+          if (!chat.sessions.some((session) => session.id === id)) chat.sessions.push({ id, personaId: personas.activePersonaId });
+          accepted(id);
+        } });
+        runtime.isSending = true;
+      },
       stopGeneration: () => { stops += 1; runtime.isSending = false; },
     },
     '@/stores/app-stores': {
-      useChatStore: (select) => select({ sessions: [], activeSessionId: null }),
+      useChatStore: (select) => select(chat),
       useModelStore: { getState: () => models },
       usePersonaStore: (select) => select(personas),
       useAppMaintenanceStore: (select) => select(maintenance),
@@ -237,9 +250,62 @@ function composerHarness() {
   const button = () => app.nodes((node) => node.type === 'Pressable')[0].node;
   const change = (value) => { input().props.onChangeText(value); app.render(); };
   const press = () => { assert.equal(button().props.disabled, false); button().props.onPress(); app.render(); };
-  return { ...app, runtime, maintenance, personas, models, sends, input, button, change, press,
+  return { ...app, runtime, maintenance, personas, models, chat, drafts, sends, input, button, change, press,
+    remount: () => { app.unmount(); return composerHarness({ runtime, maintenance, personas, models, chat, drafts, sends }); },
     stops: () => stops, selections: () => selections };
 }
+
+test('first accepted turn preserves a newer draft across the new-session composer remount', () => {
+  const app = composerHarness();
+  app.change('第一条'); app.press();
+  app.change('等待保存时写的下一条');
+  app.chat.activeSessionId = 'first-session';
+  app.chat.sessions.push({ id: 'first-session', personaId: 'role-a' });
+  app.sends[0].accepted('first-session');
+  const remounted = app.remount();
+  assert.equal(remounted.input().props.value, '等待保存时写的下一条');
+});
+
+test('conversation and new-role drafts survive remounts without crossing owners', () => {
+  let app = composerHarness();
+  app.change('甲的新聊天草稿');
+  app.personas.activePersonaId = 'role-b'; app = app.remount();
+  assert.equal(app.input().props.value, '');
+  app.change('乙的新聊天草稿');
+  app.chat.activeSessionId = 'session-a'; app = app.remount();
+  assert.equal(app.input().props.value, ''); app.change('历史会话甲草稿');
+  app.chat.activeSessionId = 'session-b'; app = app.remount();
+  assert.equal(app.input().props.value, ''); app.change('历史会话乙草稿');
+  app.chat.activeSessionId = 'session-a'; app = app.remount();
+  assert.equal(app.input().props.value, '历史会话甲草稿');
+  app.chat.activeSessionId = null; app = app.remount();
+  assert.equal(app.input().props.value, '乙的新聊天草稿');
+  app.personas.activePersonaId = 'role-a'; app = app.remount();
+  assert.equal(app.input().props.value, '甲的新聊天草稿');
+});
+
+test('a delayed acceptance updates its original draft while another conversation stays intact', () => {
+  let app = composerHarness();
+  app.change('第一条'); app.press(); app.change('甲会话的下一条');
+  app.chat.activeSessionId = 'other-session'; app = app.remount();
+  app.change('另一个会话的草稿');
+  app.sends[0].accepted('first-session'); app.render();
+  assert.equal(app.input().props.value, '另一个会话的草稿');
+  assert.equal(app.chat.activeSessionId, 'other-session');
+  app.chat.activeSessionId = 'first-session'; app = app.remount();
+  assert.equal(app.input().props.value, '甲会话的下一条');
+});
+
+test('a newly mounted destination composer cannot have its edits overwritten by an older acceptance', () => {
+  let app = composerHarness();
+  app.change('第一条'); app.press(); app.change('保存期间的下一条');
+  app.chat.activeSessionId = 'first-session'; app = app.remount();
+  app.change('会话激活后更新的草稿');
+  app.sends[0].accepted('first-session'); app.render();
+  assert.equal(app.input().props.value, '会话激活后更新的草稿');
+  app.chat.activeSessionId = null; app = app.remount();
+  assert.equal(app.input().props.value, '');
+});
 
 test('LB-0508: return inserts a newline while the explicit button sends the multiline text', () => {
   const app = composerHarness();

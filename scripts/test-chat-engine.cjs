@@ -20,6 +20,7 @@ const { createDefaultData } = require('../src/features/companion/defaults.ts');
 const { createModelThinkingConfig, createThinkingDraft } = require('../src/features/companion/thinking-config.ts');
 const { createRoleConfiguration, createRoleModelConfiguration } = require('../src/features/companion/role-config.ts');
 const { DEFAULT_SETTINGS } = require('../src/lib/db/types.ts');
+const { createChatDraftStore, chatDraftKey } = require('./helpers/chat-draft-store.cjs');
 const clone = (value) => structuredClone(value);
 const settled = () => new Promise((resolve) => setImmediate(resolve));
 function deferred() {
@@ -61,6 +62,36 @@ test('a missing role model never falls back to another available default', async
   assert.equal(app.streams.length, 0);
   assert.match(app.runtime().error, /模型已不存在/);
 });
+
+for (const diskFails of [false, true]) {
+  test(`accepted session identity migrates the latest draft after delayed ${diskFails ? 'failed' : 'successful'} first save`, async (t) => {
+    const app = await setup(t), entered = deferred(), release = deferred();
+    const drafts = createChatDraftStore(), source = chatDraftKey(null, 'persona-default');
+    drafts.getState().updateDraft(source, '第一条');
+    const sent = drafts.getState().drafts[source], accepted = [];
+    const originalSave = app.repository.saveChatTurn;
+    app.repository.saveChatTurn = async (session, messages) => {
+      entered.resolve(session.id);
+      await release.promise;
+      if (diskFails) throw new Error('disk');
+      return originalSave(session, messages);
+    };
+    const sending = app.engine.sendChatMessage(sent.text, (id) => {
+      accepted.push(id); drafts.getState().acceptDraft(source, sent, id);
+    });
+    const sessionId = await entered.promise;
+    drafts.getState().updateDraft(source, '保存期间编辑的下一条');
+    app.state().activeSessionId = 'other-session';
+    drafts.getState().updateDraft(chatDraftKey('other-session', ''), '其他会话的草稿');
+    release.resolve(); await sending;
+    assert.deepEqual(accepted, [sessionId]);
+    assert.equal(app.state().activeSessionId, 'other-session');
+    assert.equal(drafts.getState().drafts[chatDraftKey(sessionId, '')].text, '保存期间编辑的下一条');
+    assert.equal(drafts.getState().drafts[chatDraftKey('other-session', '')].text, '其他会话的草稿');
+    assert.equal(drafts.getState().drafts[source], undefined);
+    assert.equal(app.runtime().hasUnsaved, diskFails);
+  });
+}
 
 for (const web of [false, true]) {
   test(`${web ? 'web' : 'SQLite'} role edits and repeated retries preserve the first v2 attempt through disk failure`, async (t) => {

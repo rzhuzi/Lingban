@@ -89,7 +89,7 @@ export function createChatEngine(deps: ChatEngineDependencies) {
     });
     return inFlight;
   }
-  async function execute(text: string | null, retryId: string | null, onAccepted?: () => void) {
+  async function execute(text: string | null, retryId: string | null, onAccepted?: (sessionId: string) => void) {
     if (inFlight || persistence || deleting || maintenance || deps.isAppMaintenanceActive?.()) return;
     if (unsaved) { runtime({ error: '请先保存当前消息，再继续发送。' }); return; }
     const requestedSessionId = deps.getChat().activeSessionId;
@@ -193,10 +193,10 @@ export function createChatEngine(deps: ChatEngineDependencies) {
           const saved = await deps.repository.saveChatTurn(localSession, retryId ? [draft] : [user, draft]);
           put(saved, retryId ? [draft] : [user, draft]);
         });
-        try { onAccepted?.(); } catch { /* UI callback failures never alter persistence or network state. */ }
+        try { onAccepted?.(localSession.id); } catch { /* UI callback failures never alter persistence or network state. */ }
         return;
       }
-      try { onAccepted?.(); } catch { /* UI callback failures never alter generation. */ }
+      try { onAccepted?.(session.id); } catch { /* UI callback failures never alter generation. */ }
       const capturedSession = session;
       const appendContent = (delta: string) => {
         if (signal.aborted || assistant.status !== 'streaming') return;
@@ -240,7 +240,7 @@ export function createChatEngine(deps: ChatEngineDependencies) {
     });
   }
   return {
-    sendChatMessage: (text: string, onAccepted?: () => void) => !text.trim() ? Promise.resolve() : execute(text, null, onAccepted),
+    sendChatMessage: (text: string, onAccepted?: (sessionId: string) => void) => !text.trim() ? Promise.resolve() : execute(text, null, onAccepted),
     retryChatMessage: (id: string) => execute(null, id),
     stopGeneration: () => { controller?.abort(); },
     startNewConversation: () => {
