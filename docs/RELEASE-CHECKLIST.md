@@ -1,6 +1,6 @@
 # 0.1.1 安装包发布核对
 
-0.1.1 准备通过现有仓库 https://github.com/rzhuzi/Lingban 发布公开测试 APK。发布入口为 [v0.1.1](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1)，以下按实际完成情况核对。
+0.1.1 已通过现有仓库 https://github.com/rzhuzi/Lingban 正式发行。发布入口为 [v0.1.1](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1)，提供 ARM64-v8a 和通用版两个下载选项，以下按实际完成情况核对。
 
 ## 已有源码基线
 
@@ -40,7 +40,12 @@
 - 源码协作入口：[PR #1](https://github.com/rzhuzi/Lingban/pull/1)。合并和必需的双平台 CI 结果以该 PR 为准。
 - 版本标签、APK、校验和及签名/升级说明：[v0.1.1 发布页](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1)。公开状态以发布页为准。
 
-## 已校验的构建产物
+## 安装包与验证记录
+
+- ARM64-v8a：`lingban-0.1.1-arm64-v8a.apk`，供支持 64 位 ARM 的安卓设备使用。
+- 通用版 Universal：`lingban-0.1.1-android.apk`，包含四种架构；保留原文件名和下载链接。
+
+两个包功能相同，选择一个安装即可。ARM64-v8a 的构建验证记录、文件大小与校验和以 [v0.1.1 发布页](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1) 为准；以下为已完成的通用版核验记录。
 
 - 文件：`lingban-0.1.1-android.apk`，107,685,827 字节。
 - 包名：`com.lingban.app`；显示版本 `0.1.1`，versionCode `15`，最低 Android API `24`。

@@ -52,6 +52,8 @@ npx eas-cli@latest build --platform android --profile preview
 
 构建后使用 scripts/verify-android-bundle.cjs 检查 sourcemap 中 React、React Native、Expo 和 Safe Area 是否各一份，并核对包名、版本、证书和 APK 对齐。
 
+0.1.1 正式版分发 ARM64-v8a（`lingban-0.1.1-arm64-v8a.apk`）与通用版（`lingban-0.1.1-android.apk`）两个 APK。前者供支持 64 位 ARM 的安卓设备使用，后者包含 arm64-v8a、armeabi-v7a、x86、x86_64 四种架构；用户选择一个安装即可。两种包须保持相同的应用版本、versionCode、包名与发布证书，并分别核对实际架构、签名、对齐和 SHA256。保留通用版原文件名，避免已有下载链接失效；具体构建验证记录、大小与校验和以 [0.1.1 发布页](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1) 为准。
+
 参考：[Expo SDK 58](https://docs.expo.dev/versions/v58.0.0/)、[APK 构建](https://docs.expo.dev/build-reference/apk/)、[应用签名](https://docs.expo.dev/app-signing/app-credentials/)。
 
 ## 版本与基线
