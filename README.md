@@ -8,7 +8,12 @@
 
 一个可以自定义角色、记忆和模型的 Android AI 聊天应用。
 
-**0.1.1 · 公开测试版。** Android APK 与校验和见 [0.1.1 发布页](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1)。需要自行配置兼容的模型接口和 API Key，模型调用费用由相应服务商收取。
+**0.1.1 · 正式发行版。** 安装说明与校验和见 [0.1.1 发布页](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1)。需要自行配置兼容的模型接口和 API Key，模型调用费用由相应服务商收取。
+
+- [ARM64-v8a（推荐）](https://github.com/rzhuzi/Lingban/releases/download/v0.1.1/lingban-0.1.1-arm64-v8a.apk)：适用于 64 位 ARM 安卓设备。
+- [通用版 Universal](https://github.com/rzhuzi/Lingban/releases/download/v0.1.1/lingban-0.1.1-android.apk)：包含 arm64-v8a、armeabi-v7a、x86、x86_64 四种架构。
+
+两个包功能相同，选择一个安装即可；不确定设备架构时选通用版。
 
 0.1.1 使用专用发布签名，无法直接覆盖安装内部 0.7.1 测试包。卸载旧包会清除本机数据，请先自行保存所需资料；聊天 JSON 导出不提供完整备份或导入恢复。
 
@@ -64,7 +69,7 @@ npm test
 
 ## 当前限制
 
-- 仍在测试阶段；真实设备和各服务商账号的兼容性需要继续验证。
+- 真实设备和各服务商账号的兼容性需要继续验证。
 - 大量历史消息的分页与搜索优化尚未完成。
 - 未发送的草稿按会话和角色分别保存在当前运行内存中，关闭应用后不恢复。
 - 官方思考前缀和第三方格式标记有各自适用条件，不能保证任意模型支持。

@@ -8,7 +8,12 @@
 
 An Android AI chat app with customizable personas, memory and model connections.
 
-**0.1.1 · Public test release.** Download the Android APK and checksum from the [0.1.1 release page](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1). Bring your own compatible model endpoint and API key; model providers charge for API usage according to their terms.
+**0.1.1 · Official release.** Installation notes and checksums are available on the [0.1.1 release page](https://github.com/rzhuzi/Lingban/releases/tag/v0.1.1). Bring your own compatible model endpoint and API key; model providers charge for API usage according to their terms.
+
+- [ARM64-v8a (recommended)](https://github.com/rzhuzi/Lingban/releases/download/v0.1.1/lingban-0.1.1-arm64-v8a.apk): for Android devices with 64-bit ARM support.
+- [Universal](https://github.com/rzhuzi/Lingban/releases/download/v0.1.1/lingban-0.1.1-android.apk): includes arm64-v8a, armeabi-v7a, x86 and x86_64.
+
+Both APKs have the same features. Install one; choose Universal if you are unsure of your device's architecture.
 
 Version 0.1.1 uses a dedicated release signing key and cannot directly replace the internal 0.7.1 test build. Uninstalling the old build erases its local data, so save the information you need first. Chat JSON export is not a full backup and has no import or restore feature.
 
@@ -66,7 +71,7 @@ See the [development guide](docs/DEVELOPMENT.md), [contribution guide](CONTRIBUT
 
 ## Current limitations
 
-- This is an early test version. Real-device behavior and provider/account compatibility need further testing.
+- Real-device behavior and provider/account compatibility need further testing.
 - Pagination and search optimization for large conversation histories are not complete.
 - Unsent drafts are isolated by conversation and persona in the current app session's memory; they do not survive closing the app.
 - Official reasoning prefixes and third-party format markers have specific compatibility requirements; arbitrary models are not guaranteed to support them.
